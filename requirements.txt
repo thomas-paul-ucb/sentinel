@@ -1,0 +1,6 @@
+anthropic
+PyGithub
+pylint
+python-dotenv
+rich
+click
