@@ -48,12 +48,35 @@ def parse_findings(report: str) -> list[dict]:
     return findings
 
 
+def _normalize(text: str) -> str:
+    """Lowercase and strip markdown bold markers for fuzzy matching."""
+    return re.sub(r"\*+", "", text).lower()
+
+
+def _is_dismissed(finding_text: str, dismissed: list[dict]) -> bool:
+    """Return True if this finding substantially overlaps a previously dismissed one."""
+    needle = _normalize(finding_text)
+    for d in dismissed:
+        haystack = _normalize(d["finding"])
+        # Match if either string contains the other (handles minor rewording / truncation)
+        if len(haystack) >= 20 and (haystack in needle or needle in haystack):
+            return True
+    return False
+
+
 def run_review_session(report: str):
     """
     Walk the engineer through each finding after the review completes.
     Responses are persisted to preferences.json via the store module.
     """
-    findings = parse_findings(report)
+    all_findings = parse_findings(report)
+    dismissed_store = store.load()["dismissed"]
+    findings = [f for f in all_findings if not _is_dismissed(f["text"], dismissed_store)]
+
+    skipped = len(all_findings) - len(findings)
+    if skipped:
+        console.print(f"[dim]{skipped} previously dismissed finding(s) hidden.[/dim]")
+
     if not findings:
         return
 
