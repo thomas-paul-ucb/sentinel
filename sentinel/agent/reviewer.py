@@ -63,12 +63,19 @@ def process_tool_call(tool_name: str, tool_input: dict) -> str:
     return json.dumps(result)
 
 
-def run_review_agent(files: list[dict]) -> str:
+def run_review_agent(files: list[dict], memory_context: str = "") -> str:
     """
     Core agentic loop.
     Sends files to Claude, lets it call tools, feeds results back,
     until Claude is ready to write the final report.
     """
+
+    system_prompt = (
+        "You are Sentinel, an expert code reviewer. "
+        "Use tools to analyze files, then produce a structured markdown report."
+    )
+    if memory_context:
+        system_prompt += f"\n\n{memory_context}"
 
     # Build the initial message with all file contents
     file_summary = "\n\n".join(
@@ -79,10 +86,8 @@ def run_review_agent(files: list[dict]) -> str:
     messages = [
         {
             "role": "user",
-            "content": f"""You are Sentinel, an expert code reviewer.
-
-You have been given the following Python files from a GitHub repository.
-Use the available tools to analyze each file — run pylint for issues and 
+            "content": f"""You have been given the following Python files from a GitHub repository.
+Use the available tools to analyze each file — run pylint for issues and
 parse_structure to understand the code layout.
 
 After analyzing, produce a structured markdown report with:
@@ -103,6 +108,7 @@ Here are the files:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
+            system=system_prompt,
             tools=TOOLS,
             messages=messages
         )
