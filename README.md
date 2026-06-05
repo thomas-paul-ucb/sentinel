@@ -151,6 +151,10 @@ sentinel/
 └── __main__.py            # python -m sentinel entry point
 ```
 
+## Future improvements
+
+- **Multi-engineer support:** replace the flat JSON store with a database backend and per-engineer session tokens so preferences are scoped per user rather than globally.
+
 ## Tech stack
 
 - [Claude API](https://docs.anthropic.com/) — agentic loop with tool use
